@@ -205,8 +205,14 @@ with st.sidebar:
         st.session_state.preview_table = selected_table
         st.rerun()
 
-    if st.session_state.current_page == "table_preview":
-        st.divider()
+    st.divider()
+
+    # ChatGPT Prompts navigation
+    if st.button("ChatGPT Prompts"):
+        st.session_state.current_page = "prompts"
+        st.rerun()
+
+    if st.session_state.current_page != "main":
         if st.button("Main Page"):
             st.session_state.current_page = "main"
             st.rerun()
@@ -226,6 +232,88 @@ if st.session_state.get("current_page") == "table_preview":
         st.dataframe(df, use_container_width=True)
     except Exception as e:
         st.error(f"Error querying table: {e}")
+
+# ---------------------------------------------------------------------------
+# Page: ChatGPT Prompts
+# ---------------------------------------------------------------------------
+elif st.session_state.get("current_page") == "prompts":
+    st.markdown(
+        '<div class="ae-subheader">ChatGPT Prompts</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "Below are the prompts this application sends to OpenAI's GPT-4o-mini model."
+    )
+
+    # --- 1. Today's Focus ---
+    with st.expander("Today's Focus (Daily Suggestions)", expanded=True):
+        st.markdown("**System prompt**")
+        st.code(
+            "You are a sales coach. Given a sales rep's current pipeline, "
+            "accounts, recent interactions, and open work items, suggest "
+            "exactly 3 specific, actionable things they should focus on today. "
+            "Each suggestion should reference a real account or deal from the data. "
+            "Be concise — each suggestion should be 1-2 sentences max. "
+            "Return ONLY a JSON array of 3 strings, no other text.",
+            language=None,
+        )
+        st.markdown("**User message**")
+        st.code(
+            "Here is the data for {sales_agent}:\n\n"
+            "{snapshot of pipeline, accounts, recent interactions, and open work items}",
+            language=None,
+        )
+
+    # --- 2. Chatbot Agent ---
+    with st.expander("Chatbot Agent (ReAct)", expanded=True):
+        st.markdown("**System prompt**")
+        st.code(
+            "You are a helpful sales assistant with access to a CRM database.\n\n"
+            "Current User: {current_user}\n\n"
+            "You have multiple tools available:\n"
+            "- text_to_sql: For flexible, ad-hoc queries about any data in the database\n"
+            "- open_work: For quickly getting outstanding work items "
+            "(automatically filtered for current user)\n\n"
+            "IMPORTANT: For questions asking about multiple things "
+            '(like "open work AND deals closing soon"):\n'
+            "1. Call open_work first\n"
+            "2. Then call text_to_sql for the additional information\n"
+            "3. After gathering all information, provide a synthesized, "
+            "prioritized answer combining both results\n\n"
+            "Do NOT just return raw tool output - always provide a final "
+            "synthesized answer after gathering information.",
+            language=None,
+        )
+
+    # --- 3. Text-to-SQL ---
+    with st.expander("Text-to-SQL Generator", expanded=True):
+        st.markdown("**First attempt prompt**")
+        st.code(
+            "You are a SQL expert. Given this database schema and a user question, "
+            "generate a valid DuckDB SQL query.\n\n"
+            "{schema}\n\n"
+            "{business context}\n\n"
+            "User question: {user_question}\n\n"
+            "Generate ONLY the SQL query, no explanation. Use read-only SELECT "
+            "statements only.\n"
+            "Prefer using the views when appropriate for the question.",
+            language=None,
+        )
+        st.markdown("**Retry prompt (on failure)**")
+        st.code(
+            "Your previous SQL query failed with this error:\n\n"
+            "Error: {last_error}\n\n"
+            "Previous query:\n"
+            "{last_sql}\n\n"
+            "Here is the schema again:\n"
+            "{schema}\n\n"
+            "User question: {user_question}\n\n"
+            "Please fix the query. Pay careful attention to:\n"
+            "1. Use the EXACT column names from the schema\n"
+            "2. Check which table/view has the columns you need\n"
+            "3. Generate ONLY the corrected SQL query, no explanation.",
+            language=None,
+        )
 
 # ---------------------------------------------------------------------------
 # Page: Main (Chat + Suggestions)
