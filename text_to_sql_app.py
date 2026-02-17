@@ -7,6 +7,7 @@ from agent import (
     agent_answer,
     open_work_handler,
     text_to_sql_handler,
+    get_daily_suggestions,
     Tool,
     register_tool
 )
@@ -96,6 +97,34 @@ with st.sidebar:
     st.caption("Tables available:")
     st.code("accounts, interactions, products, sales_pipeline, sales_teams")
 
+
+# --- Daily Suggestions ---
+def load_suggestions():
+    """Fetch fresh suggestions for the current user."""
+    user = st.session_state.get("current_user", "Unknown")
+    st.session_state.daily_suggestions = get_daily_suggestions(user)
+    st.session_state.suggestions_user = user
+
+# Regenerate when user changes or first load
+if (
+    "daily_suggestions" not in st.session_state
+    or st.session_state.get("suggestions_user") != st.session_state.current_user
+):
+    with st.spinner("Generating today's suggestions..."):
+        load_suggestions()
+
+st.subheader("Today's Focus")
+suggestion_cols = st.columns(3)
+for idx, col in enumerate(suggestion_cols):
+    with col:
+        st.info(st.session_state.daily_suggestions[idx])
+
+if st.button("Refresh Suggestions"):
+    with st.spinner("Generating new suggestions..."):
+        load_suggestions()
+    st.rerun()
+
+st.divider()
 
 # Initialize chat history
 if "messages" not in st.session_state:
