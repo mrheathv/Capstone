@@ -21,7 +21,7 @@ AEL_DARK = "#001F42"
 AEL_LIGHT_BG = "#F0F4F8"
 AEL_GOLD = "#C8A951"
 AEL_WHITE = "#FFFFFF"
-LOGO_PATH = "assets/ae_logo.svg"
+LOGO_PATH = "assets/logo.jpg"
 
 AEL_CSS = f"""
 <style>
