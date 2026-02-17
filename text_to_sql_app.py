@@ -192,66 +192,100 @@ with st.sidebar:
     )
 
     st.divider()
-    st.markdown("**Tables available**")
-    st.code("accounts, interactions, products,\nsales_pipeline, sales_teams")
+
+    # Table browser navigation
+    TABLE_LIST = ["accounts", "interactions", "products", "sales_pipeline", "sales_teams"]
+
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = "main"
+
+    selected_table = st.selectbox("Browse a table:", options=TABLE_LIST)
+    if st.button("View Table"):
+        st.session_state.current_page = "table_preview"
+        st.session_state.preview_table = selected_table
+        st.rerun()
+
+    if st.session_state.current_page == "table_preview":
+        st.divider()
+        if st.button("Main Page"):
+            st.session_state.current_page = "main"
+            st.rerun()
 
 
 # ---------------------------------------------------------------------------
-# Daily Suggestions
+# Page: Table Preview
 # ---------------------------------------------------------------------------
-def load_suggestions():
-    """Fetch fresh suggestions for the current user."""
-    user = st.session_state.get("current_user", "Unknown")
-    st.session_state.daily_suggestions = get_daily_suggestions(user)
-    st.session_state.suggestions_user = user
-
-
-# Regenerate when user changes or first load
-if (
-    "daily_suggestions" not in st.session_state
-    or st.session_state.get("suggestions_user") != st.session_state.current_user
-):
-    with st.spinner("Generating today's suggestions..."):
-        load_suggestions()
-
-st.markdown('<div class="ae-subheader">Today\'s Focus</div>', unsafe_allow_html=True)
-suggestion_cols = st.columns(3)
-for idx, col in enumerate(suggestion_cols):
-    with col:
-        st.info(st.session_state.daily_suggestions[idx])
-
-if st.button("Refresh Suggestions"):
-    with st.spinner("Generating new suggestions..."):
-        load_suggestions()
-    st.rerun()
-
-st.divider()
+if st.session_state.get("current_page") == "table_preview":
+    table_name = st.session_state.get("preview_table", "accounts")
+    st.markdown(
+        f'<div class="ae-subheader">Table Preview: {table_name}</div>',
+        unsafe_allow_html=True,
+    )
+    try:
+        df = db_query(f"SELECT * FROM {table_name} LIMIT 20")
+        st.dataframe(df, use_container_width=True)
+    except Exception as e:
+        st.error(f"Error querying table: {e}")
 
 # ---------------------------------------------------------------------------
-# Chat
+# Page: Main (Chat + Suggestions)
 # ---------------------------------------------------------------------------
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {
-            "role": "assistant",
-            "content": "Hi! Ask me anything about your sales data. "
-            "I'll search the database to answer your questions.",
-        }
-    ]
+else:
+    # -----------------------------------------------------------------------
+    # Daily Suggestions
+    # -----------------------------------------------------------------------
+    def load_suggestions():
+        """Fetch fresh suggestions for the current user."""
+        user = st.session_state.get("current_user", "Unknown")
+        st.session_state.daily_suggestions = get_daily_suggestions(user)
+        st.session_state.suggestions_user = user
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    # Regenerate when user changes or first load
+    if (
+        "daily_suggestions" not in st.session_state
+        or st.session_state.get("suggestions_user") != st.session_state.current_user
+    ):
+        with st.spinner("Generating today's suggestions..."):
+            load_suggestions()
 
-user_question = st.chat_input("Ask a question about your sales data...")
-if user_question:
-    st.session_state.messages.append({"role": "user", "content": user_question})
-    with st.chat_message("user"):
-        st.markdown(user_question)
+    st.markdown('<div class="ae-subheader">Today\'s Focus</div>', unsafe_allow_html=True)
+    suggestion_cols = st.columns(3)
+    for idx, col in enumerate(suggestion_cols):
+        with col:
+            st.info(st.session_state.daily_suggestions[idx])
 
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            reply = agent_answer(user_question)
-            st.markdown(reply)
+    if st.button("Refresh Suggestions"):
+        with st.spinner("Generating new suggestions..."):
+            load_suggestions()
+        st.rerun()
 
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+    st.divider()
+
+    # -----------------------------------------------------------------------
+    # Chat
+    # -----------------------------------------------------------------------
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": "Hi! Ask me anything about your sales data. "
+                "I'll search the database to answer your questions.",
+            }
+        ]
+
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    user_question = st.chat_input("Ask a question about your sales data...")
+    if user_question:
+        st.session_state.messages.append({"role": "user", "content": user_question})
+        with st.chat_message("user"):
+            st.markdown(user_question)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                reply = agent_answer(user_question)
+                st.markdown(reply)
+
+        st.session_state.messages.append({"role": "assistant", "content": reply})
