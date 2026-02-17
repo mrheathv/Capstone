@@ -218,7 +218,10 @@ st.markdown('<div class="ae-subheader">Today\'s Focus</div>', unsafe_allow_html=
 suggestion_cols = st.columns(3)
 for idx, col in enumerate(suggestion_cols):
     with col:
-        st.info(st.session_state.daily_suggestions[idx])
+        s = st.session_state.daily_suggestions[idx]
+        actions = s.get("actions", [])
+        bullets = "\n".join(f"- {a}" for a in actions)
+        st.info(f"**{s['title']}**\n\n{bullets}")
 
 if st.button("Refresh Suggestions"):
     with st.spinner("Generating new suggestions..."):

@@ -73,12 +73,14 @@ def _get_user_snapshot(sales_agent: str) -> str:
     return "\n".join(sections)
 
 
-def get_daily_suggestions(sales_agent: str) -> list[str]:
+def get_daily_suggestions(sales_agent: str) -> list[dict]:
     """
     Analyze the user's accounts and pipeline data, then use OpenAI
     to generate 3 actionable suggestions for the day.
 
-    Returns a list of 3 suggestion strings.
+    Returns a list of 3 dicts, each with:
+        - "title": high-level description
+        - "actions": list of 2 specific action strings
     """
     snapshot = _get_user_snapshot(sales_agent)
 
@@ -91,10 +93,16 @@ def get_daily_suggestions(sales_agent: str) -> list[str]:
                 "content": (
                     "You are a sales coach. Given a sales rep's current pipeline, "
                     "accounts, recent interactions, and open work items, suggest "
-                    "exactly 3 specific, actionable things they should focus on today. "
+                    "exactly 3 things they should focus on today. "
                     "Each suggestion should reference a real account or deal from the data. "
-                    "Be concise — each suggestion should be 1-2 sentences max. "
-                    "Return ONLY a JSON array of 3 strings, no other text."
+                    "For each suggestion provide a high-level title (1 short sentence) "
+                    "and exactly 2 specific actions they can take.\n\n"
+                    "Return ONLY a JSON array of 3 objects, no other text. "
+                    'Each object must have "title" (string) and "actions" (array of 2 strings).\n\n'
+                    "Example format:\n"
+                    '[{"title": "Follow up with Acme Corp", '
+                    '"actions": ["Send a check-in email to the buyer", '
+                    '"Schedule a demo for their new product interest"]}]'
                 ),
             },
             {
@@ -115,13 +123,26 @@ def get_daily_suggestions(sales_agent: str) -> list[str]:
         raw = "\n".join(raw.split("\n")[:-1])
     raw = raw.strip()
 
+    fallback = {
+        "title": "Review your open pipeline deals",
+        "actions": ["Check for stale deals that need follow-up",
+                     "Prioritize deals closest to closing"],
+    }
+
     try:
         suggestions = json.loads(raw)
         if isinstance(suggestions, list) and len(suggestions) >= 3:
-            return suggestions[:3]
+            result = []
+            for s in suggestions[:3]:
+                if isinstance(s, dict) and "title" in s and "actions" in s:
+                    result.append({
+                        "title": s["title"],
+                        "actions": list(s["actions"])[:2],
+                    })
+                else:
+                    result.append(fallback)
+            return result
     except json.JSONDecodeError:
         pass
 
-    # Fallback: split by newlines if JSON parsing fails
-    lines = [l.strip().lstrip("0123456789.-) ") for l in raw.split("\n") if l.strip()]
-    return (lines + ["Review your open pipeline deals."] * 3)[:3]
+    return [fallback] * 3
