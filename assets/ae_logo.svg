@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
+  <defs>
+    <linearGradient id="wing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#003A70"/>
+      <stop offset="100%" style="stop-color:#002B5C"/>
+    </linearGradient>
+  </defs>
+  <!-- Eagle / wing mark -->
+  <g transform="translate(20, 10)">
+    <!-- Wing shape -->
+    <path d="M0,60 Q10,15 45,5 Q35,25 30,40 Q40,20 60,10 Q50,30 45,45 Q55,28 72,18 Q62,38 55,50 L40,70 Z"
+          fill="url(#wing)" />
+    <!-- Body -->
+    <path d="M40,70 L55,50 Q60,60 50,75 Q45,78 40,70Z" fill="#002B5C"/>
+  </g>
+  <!-- Company name -->
+  <text x="105" y="48" font-family="'Georgia', 'Times New Roman', serif"
+        font-size="30" font-weight="bold" fill="#002B5C"
+        letter-spacing="3">AMERICAN</text>
+  <text x="105" y="78" font-family="'Georgia', 'Times New Roman', serif"
+        font-size="30" font-weight="bold" fill="#002B5C"
+        letter-spacing="3">EQUITY</text>
+</svg>
