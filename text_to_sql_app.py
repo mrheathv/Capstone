@@ -215,13 +215,15 @@ if (
         load_suggestions()
 
 st.markdown('<div class="ae-subheader">Today\'s Focus</div>', unsafe_allow_html=True)
+st.caption("Proposed Feature — AI-generated suggestions based on your pipeline data")
 suggestion_cols = st.columns(3)
 for idx, col in enumerate(suggestion_cols):
     with col:
         s = st.session_state.daily_suggestions[idx]
+        rationale = s.get("rationale", "")
         actions = s.get("actions", [])
         bullets = "\n".join(f"- {a}" for a in actions)
-        st.info(f"**{s['title']}**\n\n{bullets}")
+        st.info(f"**{s['title']}**\n\n{rationale}\n\n{bullets}")
 
 if st.button("Refresh Suggestions"):
     with st.spinner("Generating new suggestions..."):

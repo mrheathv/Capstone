@@ -80,6 +80,7 @@ def get_daily_suggestions(sales_agent: str) -> list[dict]:
 
     Returns a list of 3 dicts, each with:
         - "title": high-level description
+        - "rationale": why this matters (1 sentence)
         - "actions": list of 2 specific action strings
     """
     snapshot = _get_user_snapshot(sales_agent)
@@ -95,12 +96,16 @@ def get_daily_suggestions(sales_agent: str) -> list[dict]:
                     "accounts, recent interactions, and open work items, suggest "
                     "exactly 3 things they should focus on today. "
                     "Each suggestion should reference a real account or deal from the data. "
-                    "For each suggestion provide a high-level title (1 short sentence) "
-                    "and exactly 2 specific actions they can take.\n\n"
+                    "For each suggestion provide:\n"
+                    "- A high-level title (1 short sentence)\n"
+                    "- A rationale explaining why this matters (1 sentence)\n"
+                    "- Exactly 2 specific actions they can take\n\n"
                     "Return ONLY a JSON array of 3 objects, no other text. "
-                    'Each object must have "title" (string) and "actions" (array of 2 strings).\n\n'
+                    'Each object must have "title" (string), "rationale" (string), '
+                    'and "actions" (array of 2 strings).\n\n'
                     "Example format:\n"
                     '[{"title": "Follow up with Acme Corp", '
+                    '"rationale": "They had a demo last week but no follow-up yet.", '
                     '"actions": ["Send a check-in email to the buyer", '
                     '"Schedule a demo for their new product interest"]}]'
                 ),
@@ -125,6 +130,7 @@ def get_daily_suggestions(sales_agent: str) -> list[dict]:
 
     fallback = {
         "title": "Review your open pipeline deals",
+        "rationale": "Keeping your pipeline fresh ensures no opportunities slip through.",
         "actions": ["Check for stale deals that need follow-up",
                      "Prioritize deals closest to closing"],
     }
@@ -137,6 +143,7 @@ def get_daily_suggestions(sales_agent: str) -> list[dict]:
                 if isinstance(s, dict) and "title" in s and "actions" in s:
                     result.append({
                         "title": s["title"],
+                        "rationale": s.get("rationale", ""),
                         "actions": list(s["actions"])[:2],
                     })
                 else:
