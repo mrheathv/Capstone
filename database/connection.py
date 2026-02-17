@@ -1,7 +1,25 @@
+import os
 import duckdb
 import pandas as pd
 
 DB_PATH = "db/sales.duckdb"
+_VIEWS_SQL = os.path.join(os.path.dirname(__file__), "..", "sql", "views.sql")
+
+
+def _ensure_views():
+    """Recreate views from sql/views.sql so the DB never drifts from code."""
+    if not os.path.exists(_VIEWS_SQL):
+        return
+    con = duckdb.connect(DB_PATH, read_only=False)
+    try:
+        with open(_VIEWS_SQL) as f:
+            con.execute(f.read())
+    finally:
+        con.close()
+
+
+_ensure_views()
+
 
 def db_query(sql: str, params=None) -> pd.DataFrame:
     """
