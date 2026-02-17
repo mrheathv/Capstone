@@ -157,7 +157,6 @@ st.markdown(AEL_CSS, unsafe_allow_html=True)
 
 # Logo + title
 st.image(LOGO_PATH, width=280)
-st.caption("Sales Data Assistant")
 
 # ---------------------------------------------------------------------------
 # Sidebar
