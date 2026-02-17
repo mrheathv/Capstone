@@ -13,6 +13,90 @@ from agent import (
 )
 from database import db_query
 
+# ---------------------------------------------------------------------------
+# Brand constants
+# ---------------------------------------------------------------------------
+AEL_NAVY = "#002B5C"
+AEL_DARK = "#001F42"
+AEL_LIGHT_BG = "#F0F4F8"
+AEL_GOLD = "#C8A951"
+AEL_WHITE = "#FFFFFF"
+LOGO_PATH = "assets/ae_logo.svg"
+
+AEL_CSS = f"""
+<style>
+/* ---------- global overrides ---------- */
+html, body, [class*="css"] {{
+    font-family: Georgia, 'Times New Roman', serif;
+}}
+
+/* ---------- sidebar ---------- */
+section[data-testid="stSidebar"] {{
+    background-color: {AEL_NAVY};
+}}
+section[data-testid="stSidebar"] * {{
+    color: {AEL_WHITE} !important;
+}}
+section[data-testid="stSidebar"] .stSelectbox label,
+section[data-testid="stSidebar"] .stSelectbox svg {{
+    color: {AEL_WHITE} !important;
+}}
+section[data-testid="stSidebar"] .stSelectbox > div > div {{
+    background-color: {AEL_DARK};
+    border-color: {AEL_GOLD};
+    color: {AEL_WHITE};
+}}
+section[data-testid="stSidebar"] hr {{
+    border-color: rgba(255,255,255,0.2);
+}}
+
+/* ---------- header bar ---------- */
+header[data-testid="stHeader"] {{
+    background-color: {AEL_NAVY};
+}}
+
+/* ---------- suggestion cards ---------- */
+div[data-testid="stAlert"] {{
+    background-color: {AEL_LIGHT_BG};
+    border-left-color: {AEL_NAVY};
+    color: #1A1A2E;
+}}
+
+/* ---------- buttons ---------- */
+.stButton > button {{
+    background-color: {AEL_NAVY};
+    color: {AEL_WHITE};
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 1.2rem;
+    font-family: Georgia, 'Times New Roman', serif;
+}}
+.stButton > button:hover {{
+    background-color: {AEL_DARK};
+    color: {AEL_GOLD};
+}}
+
+/* ---------- chat input ---------- */
+div[data-testid="stChatInput"] textarea {{
+    border-color: {AEL_NAVY} !important;
+}}
+div[data-testid="stChatInput"] button {{
+    color: {AEL_NAVY} !important;
+}}
+
+/* ---------- gold accent on subheaders ---------- */
+.ae-subheader {{
+    color: {AEL_NAVY};
+    border-bottom: 3px solid {AEL_GOLD};
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+}}
+</style>
+"""
+
 
 def get_sales_agents() -> list:
     """Fetch list of unique sales agents from the database"""
@@ -61,49 +145,66 @@ register_tool(Tool(
 ))
 
 
-# Streamlit UI
-st.set_page_config(page_title='Sales Chatbot', layout='centered')
-st.title('Sales Data Chatbot')
+# ---------------------------------------------------------------------------
+# Page config & branding
+# ---------------------------------------------------------------------------
+st.set_page_config(
+    page_title="American Equity - Sales Assistant",
+    page_icon=LOGO_PATH,
+    layout="centered",
+)
+st.markdown(AEL_CSS, unsafe_allow_html=True)
 
-# Sidebar with user context
+# Logo + title
+st.image(LOGO_PATH, width=280)
+st.caption("Sales Data Assistant")
+
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
 with st.sidebar:
-    st.header("User Context")
-    
+    st.markdown(f"### Welcome")
+
     agents = get_sales_agents()
-    
+
     if "current_user" not in st.session_state:
         st.session_state.current_user = agents[0] if agents else "Unknown"
-    
+
     selected_agent = st.selectbox(
         "Acting as:",
         options=agents,
-        index=agents.index(st.session_state.current_user) if st.session_state.current_user in agents else 0
+        index=agents.index(st.session_state.current_user)
+        if st.session_state.current_user in agents
+        else 0,
     )
-    
+
     st.session_state.current_user = selected_agent
-    st.success(f"✓ Logged in as: {selected_agent}")
-    
+    st.markdown(f"Logged in as **{selected_agent}**")
+
     st.divider()
-    
-    st.header("How it works")
-    st.markdown("""
-    1. Ask a question in plain English
-    2. AI chooses the right tool(s)
-    3. Query executes with your context
-    4. Results displayed in chat
-    """)
-    
+
+    st.markdown("#### How it works")
+    st.markdown(
+        "1. Ask a question in plain English\n"
+        "2. AI chooses the right tool(s)\n"
+        "3. Query executes with your context\n"
+        "4. Results displayed in chat"
+    )
+
     st.divider()
-    st.caption("Tables available:")
-    st.code("accounts, interactions, products, sales_pipeline, sales_teams")
+    st.markdown("**Tables available**")
+    st.code("accounts, interactions, products,\nsales_pipeline, sales_teams")
 
 
-# --- Daily Suggestions ---
+# ---------------------------------------------------------------------------
+# Daily Suggestions
+# ---------------------------------------------------------------------------
 def load_suggestions():
     """Fetch fresh suggestions for the current user."""
     user = st.session_state.get("current_user", "Unknown")
     st.session_state.daily_suggestions = get_daily_suggestions(user)
     st.session_state.suggestions_user = user
+
 
 # Regenerate when user changes or first load
 if (
@@ -113,7 +214,7 @@ if (
     with st.spinner("Generating today's suggestions..."):
         load_suggestions()
 
-st.subheader("Today's Focus")
+st.markdown('<div class="ae-subheader">Today\'s Focus</div>', unsafe_allow_html=True)
 suggestion_cols = st.columns(3)
 for idx, col in enumerate(suggestion_cols):
     with col:
@@ -126,27 +227,28 @@ if st.button("Refresh Suggestions"):
 
 st.divider()
 
-# Initialize chat history
+# ---------------------------------------------------------------------------
+# Chat
+# ---------------------------------------------------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {
             "role": "assistant",
-            "content": "Hi! Ask me anything about your sales data. I'll search the database to answer your questions."
+            "content": "Hi! Ask me anything about your sales data. "
+            "I'll search the database to answer your questions.",
         }
     ]
 
-# Display chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat input
 user_question = st.chat_input("Ask a question about your sales data...")
 if user_question:
     st.session_state.messages.append({"role": "user", "content": user_question})
     with st.chat_message("user"):
         st.markdown(user_question)
-    
+
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             reply = agent_answer(user_question)
